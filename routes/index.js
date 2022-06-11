@@ -1,21 +1,88 @@
-var express = require("express");
 const axios = require("axios");
+var express = require("express");
+const { getInfo } = require("ytdl-core");
+const ytdl = require("ytdl-core");
+
 var router = express.Router();
 
 router.post("/", async function (req, res, next) {
-  const { url, method, body } = req.body.payload;
-
   let result = null;
 
-  if (method === "GET") {
-    const response = await axios.get(url, { body });
-    result = response.data;
-  } else {
-    const response = await axios.post(url, { body });
-    result = response.data;
+  if (req.body.type === "Mp3") {
+    let { query, trackId, videoId } = req.body.payload;
+
+    if (!videoId) {
+      try {
+        videoId = await getFirstVideoId(query);
+      } catch {
+        res.send({ error: "Video id not found" });
+        return;
+      }
+    }
+
+    const mp3 = await getVideoMp3(videoId);
+
+    res.send({
+      data: {
+        trackId,
+        videoId,
+        mp3,
+      },
+    });
+
+    return;
+  }
+
+  const { url, method, body } = req.body.payload;
+
+  let response = {};
+
+  switch (method) {
+    case "GET":
+      response = await axios.get(url, { body });
+      result = response.data;
+      break;
+    case "POST":
+      response = await axios.post(url, { body });
+      result = response.data;
+      break;
+    case "DELETE":
+      response = await axios.delete(url, { body });
+      result = response.data;
+      break;
   }
 
   res.send(result);
 });
+
+const getFirstVideoId = async (query) => {
+  const searchResponse = await axios.get(
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+  );
+
+  const html = searchResponse.data;
+  const matched = html.match(/watch\?v=(.*)\\"/gm);
+
+  if (matched) {
+    const stringWithId = matched[0].split('"')[0];
+    const id = stringWithId.slice(stringWithId.indexOf("=") + 1);
+    return id;
+  }
+
+  throw new Error("Video id not found");
+};
+
+const getVideoMp3 = async (id) => {
+  const response = await getInfo(`http://www.youtube.com/watch?v=${id}`);
+  const targetFormat = response.formats.filter((format) => format.itag === 140)[0];
+  // response.formats.forEach((e) => {
+  //   console.log(e.audioBitrate);
+  //   if (e.audioBitrate === 160) {
+  //     console.log(e);
+  //   }
+  // });
+
+  return targetFormat.url;
+};
 
 module.exports = router;
