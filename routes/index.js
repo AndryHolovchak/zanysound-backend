@@ -75,12 +75,6 @@ const getFirstVideoId = async (query) => {
 const getVideoMp3 = async (id) => {
   const response = await getInfo(`http://www.youtube.com/watch?v=${id}`);
   const targetFormat = response.formats.filter((format) => format.itag === 140)[0];
-  // response.formats.forEach((e) => {
-  //   console.log(e.audioBitrate);
-  //   if (e.audioBitrate === 160) {
-  //     console.log(e);
-  //   }
-  // });
 
   return targetFormat.url;
 };
