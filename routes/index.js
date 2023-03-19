@@ -1,12 +1,11 @@
 const axios = require("axios");
 var express = require("express");
 const { getInfo } = require("ytdl-core");
-const ytdl = require("ytdl-core");
 
 var router = express.Router();
 
 router.get("/", (req, res) => {
-  res.send("Welcome to Zanysound!");
+  res.send("Welcome!");
 });
 
 router.post("/", async function (req, res, next) {
@@ -14,6 +13,7 @@ router.post("/", async function (req, res, next) {
 
   if (req.body.type === "Mp3") {
     let { query, trackId, videoId } = req.body.payload;
+    console.log({ query, trackId, videoId });
 
     if (!videoId) {
       try {
